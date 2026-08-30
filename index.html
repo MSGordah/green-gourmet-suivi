@@ -1,0 +1,1217 @@
+<title>Green Gourmet — Suivi</title>
+<meta name="description" content="Suivi interne des dépenses, commandes, livraisons et revenus de Green Gourmet Sarl" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.52.1/dist/umd/supabase.js"></script>
+
+<style>
+:root{
+  --bg:#F5F6F0; --surface:#FFFFFF; --surface-2:#ECEFE6;
+  --ink:#1E2A22; --ink-muted:#5B6459; --border:#DBDFD2;
+  --accent:#3C7A4F; --accent-ink:#FFFFFF; --accent-soft:#E3EFE6; --accent-strong:#2A5B3A;
+  --warn:#B6791E; --warn-soft:#F7ECD9;
+  --danger:#B23B3B; --danger-soft:#F6E2E0;
+  --ok:#3C7A4F; --ok-soft:#E3EFE6;
+  --focus:#2F5233;
+  --shadow: 0 1px 2px rgba(30,42,34,.06), 0 4px 14px rgba(30,42,34,.06);
+  --radius:10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12160F; --surface:#191F15; --surface-2:#1F2619;
+    --ink:#E9EEE3; --ink-muted:#9AA694; --border:#2B3327;
+    --accent:#78C58C; --accent-ink:#0E1710; --accent-soft:#22301F; --accent-strong:#9BDCAA;
+    --warn:#E3B15D; --warn-soft:#332A18;
+    --danger:#E4867D; --danger-soft:#3A2420;
+    --ok:#78C58C; --ok-soft:#1E2B1F;
+    --focus:#9BDCAA;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12160F; --surface:#191F15; --surface-2:#1F2619;
+  --ink:#E9EEE3; --ink-muted:#9AA694; --border:#2B3327;
+  --accent:#78C58C; --accent-ink:#0E1710; --accent-soft:#22301F; --accent-strong:#9BDCAA;
+  --warn:#E3B15D; --warn-soft:#332A18;
+  --danger:#E4867D; --danger-soft:#3A2420;
+  --ok:#78C58C; --ok-soft:#1E2B1F;
+  --focus:#9BDCAA;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans", system-ui, sans-serif;
+  font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.brand{ font-family:"Fraunces", Georgia, serif; text-wrap:balance; }
+.num, .mono, table td.num, input[type="number"]{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+a{ color:var(--accent-strong); }
+button, input, select, textarea{ font-family:inherit; font-size:inherit; color:inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--focus); outline-offset:2px;
+}
+::placeholder{ color: var(--ink-muted); opacity:.8; }
+
+.btn{ display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface); color:var(--ink); cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap; }
+.btn:hover{ border-color:var(--accent); }
+.btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+.btn.primary:hover{ background:var(--accent-strong); border-color:var(--accent-strong); }
+.btn.ghost{ background:transparent; border-color:transparent; }
+.btn.danger{ color:var(--danger); }
+.btn:disabled{ opacity:.5; cursor:not-allowed; }
+.btn.small{ padding:5px 10px; font-size:12px; }
+
+input[type=text], input[type=number], input[type=date], input[type=email], input[type=password], select, textarea{
+  padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); width:100%;
+}
+label{ display:block; font-size:12px; color:var(--ink-muted); margin-bottom:4px; font-weight:600; letter-spacing:.02em; }
+.field{ margin-bottom:10px; }
+.row{ display:flex; gap:10px; flex-wrap:wrap; }
+.row > *{ flex:1; min-width:120px; }
+
+/* ---------- login ---------- */
+#login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:
+  radial-gradient(600px 300px at 15% 10%, var(--accent-soft), transparent), var(--bg); }
+.login-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:32px; box-shadow:var(--shadow); }
+.login-card .brand{ font-size:26px; font-weight:600; margin:0 0 2px; color:var(--accent-strong);}
+.login-card .tag{ color:var(--ink-muted); font-size:13px; margin:0 0 24px; }
+.login-error{ background:var(--danger-soft); color:var(--danger); padding:8px 12px; border-radius:8px; font-size:13px; margin-bottom:12px; }
+.login-hint{ margin-top:16px; font-size:12px; color:var(--ink-muted); text-align:center; }
+
+/* ---------- shell ---------- */
+#shell{ display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
+#sidebar{ background:var(--surface); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:4px; }
+#sidebar .brand{ font-size:19px; font-weight:600; color:var(--accent-strong); padding:4px 10px 2px; }
+#sidebar .subbrand{ font-size:11px; color:var(--ink-muted); padding:0 10px 18px; letter-spacing:.03em; text-transform:uppercase; }
+.nav-item{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:var(--ink-muted); cursor:pointer; font-weight:600; font-size:13px; }
+.nav-item:hover{ background:var(--surface-2); color:var(--ink); }
+.nav-item.active{ background:var(--accent-soft); color:var(--accent-strong); }
+.nav-spacer{ flex:1; }
+.nav-user{ border-top:1px solid var(--border); padding-top:12px; margin-top:8px; font-size:12px; color:var(--ink-muted); }
+.nav-user b{ color:var(--ink); display:block; font-size:13px; }
+#main{ padding:28px 32px; max-width:1180px; width:100%; }
+.view-title{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
+.view-title h1{ font-size:24px; margin:0; font-weight:600; }
+.view-title .sub{ color:var(--ink-muted); font-size:13px; }
+
+/* ---------- cards / kpi ---------- */
+.kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:24px; }
+.kpi{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
+.kpi .label{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); font-weight:700; margin-bottom:8px; }
+.kpi .value{ font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; }
+.kpi .value.warn{ color:var(--warn); } .kpi .value.danger{ color:var(--danger); } .kpi .value.ok{ color:var(--ok); }
+.kpi .foot{ font-size:12px; color:var(--ink-muted); margin-top:4px; }
+
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px; }
+.card .card-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
+.card .card-head h2{ font-size:15px; margin:0; font-weight:600; }
+.card .card-body{ padding:16px 18px; }
+
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-muted); font-weight:700; padding:8px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
+td{ padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td{ border-bottom:none; }
+.table-wrap{ overflow-x:auto; }
+tbody tr:hover{ background:var(--surface-2); }
+
+.pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:700; letter-spacing:.02em; white-space:nowrap; }
+.pill.ok{ background:var(--ok-soft); color:var(--ok); }
+.pill.warn{ background:var(--warn-soft); color:var(--warn); }
+.pill.danger{ background:var(--danger-soft); color:var(--danger); }
+.pill.muted{ background:var(--surface-2); color:var(--ink-muted); }
+.pill::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+.banner{ display:flex; gap:10px; align-items:flex-start; padding:12px 16px; border-radius:10px; margin-bottom:18px; font-size:13px; }
+.banner.warn{ background:var(--warn-soft); color:var(--warn); }
+.banner.danger{ background:var(--danger-soft); color:var(--danger); }
+.banner.ok{ background:var(--ok-soft); color:var(--ok); }
+.empty{ color:var(--ink-muted); font-size:13px; padding:24px; text-align:center; }
+.muted{ color:var(--ink-muted); }
+.hidden{ display:none !important; }
+.section-note{ font-size:12px; color:var(--ink-muted); margin:6px 0 0; }
+.chip-toggle{ display:flex; gap:6px; flex-wrap:wrap; }
+.chip-toggle .btn{ padding:5px 11px; }
+.order-detail{ background:var(--surface-2); border-radius:8px; padding:12px 14px; margin:6px 0 10px; }
+.order-detail table{ background:var(--surface); border-radius:6px; }
+.bars{ display:flex; flex-direction:column; gap:10px; }
+.bar-row{ display:grid; grid-template-columns:90px 1fr 60px; gap:10px; align-items:center; font-size:12px; }
+.bar-track{ background:var(--surface-2); border-radius:5px; height:10px; overflow:hidden; position:relative; }
+.bar-fill{ height:100%; border-radius:5px 0 0 5px; background:var(--accent); }
+.bar-fill.over{ background:var(--warn); }
+.toast{ position:fixed; bottom:20px; right:20px; background:var(--ink); color:var(--bg); padding:11px 16px; border-radius:9px; font-size:13px; box-shadow:var(--shadow); z-index:50; max-width:320px; }
+.toast.err{ background:var(--danger); color:#fff; }
+.modal-bg{ position:fixed; inset:0; background:rgba(20,25,18,.45); display:flex; align-items:center; justify-content:center; z-index:40; padding:20px; }
+.modal{ background:var(--surface); border-radius:14px; padding:22px; width:100%; max-width:460px; box-shadow:var(--shadow); max-height:86vh; overflow:auto; }
+.modal h2{ margin:0 0 14px; font-size:17px; }
+.item-line{ display:grid; grid-template-columns:1.4fr .8fr .8fr auto; gap:8px; align-items:end; margin-bottom:8px; }
+@media (max-width:820px){
+  #shell{ grid-template-columns:1fr; }
+  #sidebar{ flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border); }
+  .nav-user, .nav-spacer, .subbrand{ display:none; }
+  #main{ padding:18px 16px; }
+}
+</style>
+
+<div id="app"></div>
+
+<script>
+(function(){
+"use strict";
+
+var SUPABASE_URL = "https://naqdzakddbchsgbjdipo.supabase.co";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hcWR6YWtkZGJjaHNnYmpkaXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzcxNjcsImV4cCI6MjA5ODMxMzE2N30.abPDOlOeqJlBC63STKZwU1H09-taQl_gDhCgYNdmIBY";
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+var CROPS_UNIT = "botte";
+var CHANNELS = ["WhatsApp","Telephone","Direct","Commercial"];
+var ORDER_STATUSES = ["brouillon","confirmée","préparée","livrée","annulée"];
+var EXPENSE_CATEGORIES = ["Semences","Intrants / engrais","Salaires","Carburant","Transport / livraison","Emballage","Electricite / groupe electrogene","Maintenance","Autre"];
+
+var state = {
+  session: null,
+  profile: null,
+  view: "dashboard",
+  data: {},
+  loading: false,
+  toast: null,
+  modal: null,
+  month: currentMonthStr()
+};
+
+function currentMonthStr(){
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+}
+function monthBounds(monthStr){
+  var parts = monthStr.split("-").map(Number);
+  var start = new Date(Date.UTC(parts[0], parts[1]-1, 1));
+  var end = new Date(Date.UTC(parts[0], parts[1], 0));
+  return { start: start.toISOString().slice(0,10), end: end.toISOString().slice(0,10) };
+}
+function esc(s){
+  if (s === null || s === undefined) return "";
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function fmtFCFA(n){
+  n = Number(n) || 0;
+  return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " FCFA";
+}
+function fmtDate(d){
+  if (!d) return "—";
+  var dt = new Date(d + (String(d).length <= 10 ? "T00:00:00" : ""));
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric"});
+}
+function pct(n){ return (n*100).toFixed(0) + "%"; }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+function showToast(msg, isErr){
+  state.toast = {msg: msg, err: !!isErr};
+  render();
+  setTimeout(function(){ state.toast = null; render(); }, 3800);
+}
+
+function roleAllows(view){
+  var r = state.profile && state.profile.role;
+  if (!r) return false;
+  var map = {
+    dashboard: ["admin","superviseur","commercial","production"],
+    commandes: ["admin","superviseur","commercial","production"],
+    depenses: ["admin","superviseur"],
+    recoltes: ["admin","superviseur","production","commercial"],
+    factures: ["admin","superviseur","commercial"],
+    parametres: ["admin","superviseur"]
+  };
+  return (map[view]||[]).indexOf(r) !== -1;
+}
+
+/* ---------------------------------------------------------------- */
+/* AUTH                                                               */
+/* ---------------------------------------------------------------- */
+async function init(){
+  var { data } = await sb.auth.getSession();
+  state.session = data.session;
+  if (state.session) await loadProfile();
+  render();
+  sb.auth.onAuthStateChange(function(event, session){
+    state.session = session;
+    if (session) { loadProfile().then(render); }
+    else { state.profile = null; render(); }
+  });
+}
+
+async function loadProfile(){
+  try{
+    var uid = state.session.user.id;
+    var { data, error } = await sb.from("profiles").select("*").eq("id", uid).single();
+    if (error) throw error;
+    state.profile = data;
+  }catch(e){
+    state.profile = { role: null, email: state.session.user.email };
+  }
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  var email = e.target.email.value.trim();
+  var password = e.target.password.value;
+  state.loginError = null;
+  state.loading = true; render();
+  var { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
+  state.loading = false;
+  if (error){ state.loginError = error.message; render(); return; }
+  state.session = data.session;
+  await loadProfile();
+  render();
+}
+
+async function handleForgot(email){
+  if (!email){ showToast("Entrez votre email d'abord.", true); return; }
+  try{
+    await sb.auth.resetPasswordForEmail(email);
+    showToast("Email de reinitialisation envoye si ce compte existe.");
+  }catch(e){ showToast("Erreur: " + e.message, true); }
+}
+
+async function handleLogout(){
+  await sb.auth.signOut();
+  state.session = null; state.profile = null; state.view = "dashboard";
+  render();
+}
+
+/* ---------------------------------------------------------------- */
+/* DATA LOADERS                                                       */
+/* ---------------------------------------------------------------- */
+async function loadDashboard(){
+  var mb = monthBounds(state.month);
+  var results = await Promise.all([
+    sb.from("v_sales").select("*").gte("delivery_date", mb.start).lte("delivery_date", mb.end),
+    sb.from("orders").select("id, client_name, delivery_date, status, channel, order_items(crop, qty_bottles, qty_declared_by_sales, qty_delivered)").gte("delivery_date", mb.start).lte("delivery_date", mb.end),
+    sb.from("harvest_forecasts").select("*").lte("period_start", mb.end).gte("period_end", mb.start),
+    sb.from("harvest_logs").select("*").gte("harvest_date", mb.start).lte("harvest_date", mb.end),
+    roleAllows("depenses") ? sb.from("expenses").select("*").gte("expense_date", mb.start).lte("expense_date", mb.end) : Promise.resolve({data:[]}),
+    roleAllows("depenses") ? sb.from("v_compte_courant_associe").select("*").single() : Promise.resolve({data:null}),
+    sb.from("invoices").select("*").eq("payment_status","impayee")
+  ]);
+  state.data.sales = results[0].data || [];
+  state.data.orders = results[1].data || [];
+  state.data.forecasts = results[2].data || [];
+  state.data.harvestLogs = results[3].data || [];
+  state.data.expenses = results[4].data || [];
+  state.data.compteAssocie = results[5].data;
+  state.data.unpaidInvoices = results[6].data || [];
+}
+
+async function loadOrders(){
+  var { data } = await sb.from("orders").select("*, order_items(*)").order("delivery_date", {ascending:false}).limit(200);
+  state.data.orders = data || [];
+  var { data: clients } = await sb.from("clients").select("*").eq("is_active", true).order("client_name");
+  state.data.clients = clients || [];
+  var { data: crops } = await sb.from("crop_configs").select("*").order("crop");
+  state.data.crops = crops || [];
+}
+
+async function loadExpenses(){
+  var { data } = await sb.from("expenses").select("*").order("expense_date", {ascending:false}).limit(300);
+  state.data.expensesAll = data || [];
+  var { data: cca } = await sb.from("v_compte_courant_associe").select("*").single();
+  state.data.compteAssocie = cca;
+}
+
+async function loadRecoltes(){
+  var { data: forecasts } = await sb.from("harvest_forecasts").select("*").order("period_start", {ascending:false}).limit(100);
+  state.data.forecasts = forecasts || [];
+  var { data: logs } = await sb.from("harvest_logs").select("*").order("harvest_date", {ascending:false}).limit(100);
+  state.data.harvestLogs = logs || [];
+}
+
+async function loadFactures(){
+  var { data } = await sb.from("invoices").select("*, invoice_items(*)").order("invoice_date", {ascending:false}).limit(200);
+  state.data.invoices = data || [];
+}
+
+async function loadParametres(){
+  var { data: crops } = await sb.from("crop_configs").select("*").order("crop");
+  state.data.crops = crops || [];
+  var { data: clients } = await sb.from("clients").select("*").order("client_name");
+  state.data.clients = clients || [];
+  var { data: settings } = await sb.from("app_settings").select("*").eq("id",1).single();
+  state.data.settings = settings;
+}
+
+async function loadView(view){
+  state.loading = true; render();
+  try{
+    if (view === "dashboard") await loadDashboard();
+    else if (view === "commandes") await loadOrders();
+    else if (view === "depenses") await loadExpenses();
+    else if (view === "recoltes") await loadRecoltes();
+    else if (view === "factures") await loadFactures();
+    else if (view === "parametres") await loadParametres();
+  }catch(e){
+    showToast("Erreur de chargement: " + e.message, true);
+  }
+  state.loading = false; render();
+}
+
+function goto(view){
+  state.view = view;
+  loadView(view);
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: LOGIN                                                      */
+/* ---------------------------------------------------------------- */
+function renderLogin(){
+  return '' +
+  '<div id="login-screen">' +
+    '<div class="login-card">' +
+      '<p class="brand">Green Gourmet</p>' +
+      '<p class="tag">Suivi depenses &middot; commandes &middot; livraisons</p>' +
+      (state.loginError ? '<div class="login-error">' + esc(state.loginError) + '</div>' : '') +
+      '<form id="login-form">' +
+        '<div class="field"><label>Email</label><input type="email" name="email" required autocomplete="username" /></div>' +
+        '<div class="field"><label>Mot de passe</label><input type="password" name="password" required autocomplete="current-password" /></div>' +
+        '<button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:6px;" ' + (state.loading?'disabled':'') + '>' + (state.loading ? 'Connexion…' : 'Se connecter') + '</button>' +
+      '</form>' +
+      '<p class="login-hint"><a href="#" id="forgot-link">Mot de passe oublie ?</a></p>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: SHELL                                                      */
+/* ---------------------------------------------------------------- */
+var NAV = [
+  {id:"dashboard", label:"Tableau de bord"},
+  {id:"commandes", label:"Commandes & livraisons"},
+  {id:"depenses", label:"Depenses"},
+  {id:"recoltes", label:"Recoltes"},
+  {id:"factures", label:"Factures & creances"},
+  {id:"parametres", label:"Parametres"}
+];
+
+function renderShell(inner){
+  var navHtml = NAV.filter(function(n){ return roleAllows(n.id); }).map(function(n){
+    return '<div class="nav-item ' + (state.view===n.id?'active':'') + '" data-nav="' + n.id + '">' + n.label + '</div>';
+  }).join("");
+  var roleLabel = {admin:"Administrateur", superviseur:"Superviseur", commercial:"Commercial", production:"Production"}[state.profile && state.profile.role] || "—";
+  return '' +
+  '<div id="shell">' +
+    '<div id="sidebar">' +
+      '<div class="brand">Green Gourmet</div>' +
+      '<div class="subbrand">Suivi interne</div>' +
+      navHtml +
+      '<div class="nav-spacer"></div>' +
+      '<div class="nav-user">' +
+        '<b>' + esc((state.profile && (state.profile.full_name || state.profile.email)) || "") + '</b>' +
+        roleLabel +
+        '<div style="margin-top:10px;"><button class="btn small ghost" id="logout-btn" style="padding-left:0;">Se deconnecter</button></div>' +
+      '</div>' +
+    '</div>' +
+    '<div id="main">' + inner + '</div>' +
+  '</div>';
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: DASHBOARD                                                   */
+/* ---------------------------------------------------------------- */
+function renderDashboard(){
+  var d = state.data;
+  var sales = d.sales || [];
+  var caLivre = sales.reduce(function(s,r){ return s + (r.amount_ht_xof||0); }, 0);
+  var totalDep = (d.expenses||[]).reduce(function(s,r){ return s + Number(r.amount); }, 0);
+  var creances = (d.unpaidInvoices||[]).reduce(function(s,r){ return s + Number(r.total_xof||0); }, 0);
+  var cca = d.compteAssocie;
+
+  // reconciliation per crop
+  var perCrop = {};
+  (d.orders||[]).forEach(function(o){
+    (o.order_items||[]).forEach(function(it){
+      var c = it.crop; perCrop[c] = perCrop[c] || {ordered:0, declared:0, forecast:0};
+      perCrop[c].ordered += Number(it.qty_bottles||0);
+      perCrop[c].declared += Number(it.qty_declared_by_sales||0);
+    });
+  });
+  (d.forecasts||[]).forEach(function(f){
+    perCrop[f.crop] = perCrop[f.crop] || {ordered:0, declared:0, forecast:0};
+    perCrop[f.crop].forecast += Number(f.forecast_qty_bottles||0);
+  });
+  var crops = Object.keys(perCrop);
+  var maxVal = Math.max(1, Object.values(perCrop).reduce(function(m,v){ return Math.max(m, v.ordered, v.forecast); }, 0));
+
+  var kpis = [];
+  kpis.push({label:"CA livre (mois)", value: fmtFCFA(caLivre), tone:"ok"});
+  if (roleAllows("depenses")){
+    kpis.push({label:"Depenses (mois)", value: fmtFCFA(totalDep), tone:""});
+    kpis.push({label:"Solde compte courant associe", value: cca ? fmtFCFA(cca.solde_du_a_l_associe) : "—", tone: cca && cca.solde_du_a_l_associe>0 ? "warn":"ok", foot:"Du a Mohamed Sofiane Gordah"});
+  }
+  kpis.push({label:"Creances clients", value: fmtFCFA(creances), tone: creances>0 ? "warn":"ok", foot:(d.unpaidInvoices||[]).length + " facture(s) impayee(s)"});
+
+  var kpiHtml = kpis.map(function(k){
+    return '<div class="kpi"><div class="label">' + k.label + '</div><div class="value ' + (k.tone||'') + '">' + k.value + '</div>' + (k.foot?'<div class="foot">'+k.foot+'</div>':'') + '</div>';
+  }).join("");
+
+  var barsHtml = crops.length ? crops.map(function(c){
+    var v = perCrop[c];
+    var overW = Math.min(100, (v.ordered/maxVal)*100);
+    var fcW = Math.min(100, (v.forecast/maxVal)*100);
+    var over = v.forecast>0 && v.ordered>v.forecast;
+    var ecart = v.declared>0 ? Math.round(((v.declared-v.ordered)/Math.max(1,v.ordered))*100) : null;
+    return '<div class="bar-row"><div>'+esc(c)+'</div>' +
+      '<div>' +
+        '<div class="bar-track"><div class="bar-fill '+(over?'over':'')+'" style="width:'+overW+'%"></div></div>' +
+        '<div class="bar-track" style="margin-top:3px;opacity:.55;"><div class="bar-fill" style="width:'+fcW+'%"></div></div>' +
+      '</div>' +
+      '<div class="num" style="text-align:right;">' + v.ordered + ' / ' + v.forecast + (ecart!==null ? '<div style="font-size:10px;color:var(--ink-muted);">com. '+(ecart>0?'+':'')+ecart+'%</div>':'') + '</div>' +
+    '</div>';
+  }).join("") : '<div class="empty">Aucune donnee pour ce mois.</div>';
+
+  return renderShell(
+    '<div class="view-title"><div><h1>Tableau de bord</h1><div class="sub">Vue d\'ensemble du mois en cours</div></div>' + monthPicker() + '</div>' +
+    (crops.some(function(c){return perCrop[c].ordered>perCrop[c].forecast && perCrop[c].forecast>0;}) ?
+      '<div class="banner warn">Attention : au moins un produit est commande au-dela de la recolte prevue ce mois-ci.</div>' : '') +
+    '<div class="kpi-grid">' + kpiHtml + '</div>' +
+    '<div class="card"><div class="card-head"><h2>Commandes vs recolte prevue (bottes)</h2><span class="section-note" style="margin:0;">Barre haute = commande, barre pale = recolte prevue</span></div>' +
+      '<div class="card-body"><div class="bars">' + barsHtml + '</div></div></div>' +
+    '<div class="card"><div class="card-head"><h2>Ventes livrees ce mois</h2></div><div class="card-body table-wrap">' +
+      salesTable(sales) +
+    '</div></div>'
+  );
+}
+
+function monthPicker(){
+  return '<input type="month" id="month-picker" value="'+state.month+'" style="width:auto;" />';
+}
+
+function salesTable(sales){
+  if (!sales.length) return '<div class="empty">Aucune vente livree sur cette periode.</div>';
+  var rows = sales.map(function(r){
+    return '<tr><td>'+fmtDate(r.delivery_date)+'</td><td>'+esc(r.client_name)+'</td><td>'+esc(r.crop)+'</td>' +
+      '<td class="num">'+ (r.qty_delivered!=null?r.qty_delivered:r.qty_ordered) +'</td>' +
+      '<td class="num">'+fmtFCFA(r.amount_ht_xof)+'</td>' +
+      '<td>'+pill(r.channel,'muted')+'</td></tr>';
+  }).join("");
+  return '<table><thead><tr><th>Date</th><th>Client</th><th>Produit</th><th>Qte</th><th>Montant HT</th><th>Canal</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function pill(text, tone){
+  return '<span class="pill '+tone+'">'+esc(text)+'</span>';
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: COMMANDES                                                   */
+/* ---------------------------------------------------------------- */
+function statusTone(s){
+  return {"livrée":"ok","annulée":"danger","confirmée":"muted","préparée":"warn","brouillon":"muted"}[s] || "muted";
+}
+
+function renderCommandes(){
+  var orders = state.data.orders || [];
+  var rows = orders.map(function(o){
+    var items = o.order_items || [];
+    var total = items.reduce(function(s,it){ return s + Number(it.qty_bottles||0); }, 0);
+    return '<tr class="order-row" data-order="'+o.id+'">' +
+      '<td class="num">#'+o.id+'</td>' +
+      '<td>'+fmtDate(o.delivery_date)+'</td>' +
+      '<td>'+esc(o.client_name)+'</td>' +
+      '<td>'+pill(o.channel,'muted')+'</td>' +
+      '<td class="num">'+total+' '+CROPS_UNIT+'(s)</td>' +
+      '<td>'+pill(o.status, statusTone(o.status))+'</td>' +
+      '<td><button class="btn small" data-toggle-order="'+o.id+'">Details</button></td>' +
+    '</tr>' +
+    '<tr class="order-detail-row hidden" id="detail-'+o.id+'"><td colspan="7">' + orderDetail(o) + '</td></tr>';
+  }).join("");
+
+  return renderShell(
+    '<div class="view-title"><div><h1>Commandes & livraisons</h1><div class="sub">Prosuma, Super U, Djoli et autres</div></div>' +
+      '<button class="btn primary" id="new-order-btn">+ Nouvelle commande</button></div>' +
+    '<div class="card"><div class="card-body table-wrap">' +
+      (orders.length ?
+      '<table><thead><tr><th>N</th><th>Livraison</th><th>Client</th><th>Canal</th><th>Qte</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'
+      : '<div class="empty">Aucune commande pour le moment. Cliquez sur "Nouvelle commande".</div>') +
+    '</div></div>' +
+    (state.modal === "new-order" ? newOrderModal() : "")
+  );
+}
+
+function orderDetail(o){
+  var items = o.order_items || [];
+  var canEditDeclared = ["admin","superviseur","commercial"].indexOf(state.profile.role) !== -1;
+  var canDeliver = canEditDeclared && o.status !== "livrée" && o.status !== "annulée";
+  var rows = items.map(function(it){
+    return '<tr data-item="'+it.id+'">' +
+      '<td>'+esc(it.crop)+'</td>' +
+      '<td class="num">'+it.qty_bottles+'</td>' +
+      '<td class="num">' + (canEditDeclared ?
+        '<input type="number" min="0" class="declared-input" data-item-declared="'+it.id+'" value="'+(it.qty_declared_by_sales!=null?it.qty_declared_by_sales:'')+'" style="width:70px;" />' :
+        (it.qty_declared_by_sales!=null?it.qty_declared_by_sales:'—')) + '</td>' +
+      '<td class="num">' + (canDeliver ?
+        '<input type="number" min="0" class="delivered-input" data-item-delivered="'+it.id+'" value="'+(it.qty_delivered!=null?it.qty_delivered:it.qty_bottles)+'" style="width:70px;" />' :
+        (it.qty_delivered!=null?it.qty_delivered:'—')) + '</td>' +
+      '<td>' + (it.delivery_status ? pill(it.delivery_status, it.delivery_status==='refusee'?'danger':'ok') : '—') + '</td>' +
+    '</tr>';
+  }).join("");
+  var actions = '<div class="row" style="margin-top:10px;">';
+  if (canDeliver){
+    actions += '<button class="btn primary small" data-mark-delivered="'+o.id+'">Marquer livree (genere la facture)</button>';
+  }
+  if (canEditDeclared && o.status !== "annulée" && o.status !== "livrée"){
+    actions += '<select data-order-status="'+o.id+'" style="max-width:180px;">' + ORDER_STATUSES.filter(function(s){return s!=='livrée';}).map(function(s){
+      return '<option value="'+s+'" '+(s===o.status?'selected':'')+'>'+s+'</option>';
+    }).join("") + '</select>';
+  }
+  actions += '</div>';
+  return '<div class="order-detail">' +
+    (o.note ? '<p class="section-note" style="margin-bottom:8px;">Note : '+esc(o.note)+'</p>' : '') +
+    '<table><thead><tr><th>Produit</th><th>Commande</th><th>Declare commercial</th><th>Livre</th><th>Statut ligne</th></tr></thead><tbody>'+rows+'</tbody></table>' +
+    actions +
+  '</div>';
+}
+
+function newOrderModal(){
+  var clients = state.data.clients || [];
+  var crops = state.data.crops || [];
+  return '<div class="modal-bg" id="modal-bg"><div class="modal">' +
+    '<h2>Nouvelle commande</h2>' +
+    '<form id="new-order-form">' +
+      '<div class="row"><div class="field"><label>Client</label><select name="client_name" required>' +
+        clients.map(function(c){ return '<option value="'+esc(c.client_name)+'">'+esc(c.client_name)+'</option>'; }).join("") +
+      '</select></div>' +
+      '<div class="field"><label>Date de livraison prevue</label><input type="date" name="delivery_date" value="'+todayISO()+'" required /></div></div>' +
+      '<div class="row"><div class="field"><label>Canal</label><select name="channel">' +
+        CHANNELS.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join("") +
+      '</select></div>' +
+      '<div class="field"><label>Statut initial</label><select name="status">' +
+        '<option value="confirmée">confirmee</option><option value="brouillon">brouillon</option>' +
+      '</select></div></div>' +
+      '<div class="field"><label>Note (optionnel)</label><input type="text" name="note" /></div>' +
+      '<label style="margin-top:6px;">Produits commandes</label>' +
+      '<div id="item-lines">' + itemLine(0, crops) + '</div>' +
+      '<button type="button" class="btn small ghost" id="add-item-line">+ ajouter un produit</button>' +
+      '<div class="row" style="margin-top:18px;">' +
+        '<button type="button" class="btn ghost" id="cancel-order">Annuler</button>' +
+        '<button type="submit" class="btn primary">Creer la commande</button>' +
+      '</div>' +
+    '</form>' +
+  '</div></div>';
+}
+function itemLine(i, crops){
+  return '<div class="item-line" data-line="'+i+'">' +
+    '<div class="field" style="margin:0;"><label>Produit</label><select name="crop">' +
+      crops.map(function(c){ return '<option value="'+esc(c.crop)+'">'+esc(c.crop)+'</option>'; }).join("") +
+    '</select></div>' +
+    '<div class="field" style="margin:0;"><label>Qte commandee</label><input type="number" min="0" name="qty" required /></div>' +
+    '<div class="field" style="margin:0;"><label>Declare commercial</label><input type="number" min="0" name="declared" /></div>' +
+    '<button type="button" class="btn small ghost remove-line" style="margin-bottom:1px;">&times;</button>' +
+  '</div>';
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: DEPENSES                                                    */
+/* ---------------------------------------------------------------- */
+function renderDepenses(){
+  var list = state.data.expensesAll || [];
+  var cca = state.data.compteAssocie;
+  var rows = list.map(function(e){
+    return '<tr>' +
+      '<td>'+fmtDate(e.expense_date)+'</td>' +
+      '<td>'+esc(e.category)+'</td>' +
+      '<td>'+esc(e.description||'')+'</td>' +
+      '<td class="num">'+fmtFCFA(e.amount)+'</td>' +
+      '<td>'+pill(e.paid_by, e.paid_by==='Avance associe'?'warn':'muted')+'</td>' +
+      '<td>' + (e.paid_by==='Avance associe' ?
+        '<label style="display:flex;align-items:center;gap:6px;font-weight:400;"><input type="checkbox" data-reimburse="'+e.id+'" '+(e.reimbursed?'checked':'')+' /> rembourse</label>'
+        : '—') + '</td>' +
+    '</tr>';
+  }).join("");
+  return renderShell(
+    '<div class="view-title"><div><h1>Depenses</h1><div class="sub">Chaque depense est classee Green Gourmet ou avance associe</div></div>' +
+      '<button class="btn primary" id="new-expense-btn">+ Nouvelle depense</button></div>' +
+    (cca ? '<div class="kpi-grid">' +
+      '<div class="kpi"><div class="label">Solde du a l\'associe</div><div class="value '+(cca.solde_du_a_l_associe>0?'warn':'ok')+'">'+fmtFCFA(cca.solde_du_a_l_associe)+'</div><div class="foot">Mohamed Sofiane Gordah</div></div>' +
+      '<div class="kpi"><div class="label">Total avances cumulees</div><div class="value">'+fmtFCFA(cca.total_avances_cumulees)+'</div></div>' +
+      '<div class="kpi"><div class="label">Total deja rembourse</div><div class="value ok">'+fmtFCFA(cca.total_rembourse_cumule)+'</div></div>' +
+    '</div>' : '') +
+    '<div class="card"><div class="card-head"><h2>Historique des depenses</h2></div><div class="card-body table-wrap">' +
+      (list.length ? '<table><thead><tr><th>Date</th><th>Categorie</th><th>Description</th><th>Montant</th><th>Paye par</th><th>Remboursement</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      : '<div class="empty">Aucune depense enregistree.</div>') +
+    '</div></div>' +
+    (state.modal === "new-expense" ? newExpenseModal() : "")
+  );
+}
+
+function newExpenseModal(){
+  return '<div class="modal-bg" id="modal-bg"><div class="modal">' +
+    '<h2>Nouvelle depense</h2>' +
+    '<form id="new-expense-form">' +
+      '<div class="row"><div class="field"><label>Date</label><input type="date" name="expense_date" value="'+todayISO()+'" required /></div>' +
+      '<div class="field"><label>Montant (FCFA)</label><input type="number" min="0" name="amount" required /></div></div>' +
+      '<div class="field"><label>Categorie</label><select name="category">' +
+        EXPENSE_CATEGORIES.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join("") +
+      '</select></div>' +
+      '<div class="field"><label>Description</label><input type="text" name="description" /></div>' +
+      '<div class="field"><label>Mode de paiement</label><select name="payment_method"><option>Especes</option><option>Virement</option><option>Mobile money</option></select></div>' +
+      '<div class="field"><label>Payee par</label><select name="paid_by" required>' +
+        '<option value="Green Gourmet">Green Gourmet</option>' +
+        '<option value="Avance associe">Avance du compte associe (Mohamed Sofiane Gordah)</option>' +
+      '</select></div>' +
+      '<div class="row" style="margin-top:14px;">' +
+        '<button type="button" class="btn ghost" id="cancel-expense">Annuler</button>' +
+        '<button type="submit" class="btn primary">Enregistrer</button>' +
+      '</div>' +
+    '</form>' +
+  '</div></div>';
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: RECOLTES                                                    */
+/* ---------------------------------------------------------------- */
+function renderRecoltes(){
+  var fc = state.data.forecasts || [];
+  var logs = state.data.harvestLogs || [];
+  var canWrite = ["admin","superviseur","production"].indexOf(state.profile.role) !== -1;
+  var fcRows = fc.map(function(f){
+    return '<tr><td>'+esc(f.crop)+'</td><td>'+fmtDate(f.period_start)+' → '+fmtDate(f.period_end)+'</td><td class="num">'+f.forecast_qty_bottles+'</td><td>'+esc(f.zone||'—')+'</td></tr>';
+  }).join("");
+  var logRows = logs.map(function(l){
+    return '<tr><td>'+fmtDate(l.harvest_date)+'</td><td>'+esc(l.crop)+'</td><td class="num">'+l.qty_bottles+'</td><td>'+esc(l.outlet||'—')+'</td></tr>';
+  }).join("");
+  return renderShell(
+    '<div class="view-title"><div><h1>Recoltes</h1><div class="sub">Previsions vs recolte reelle</div></div>' +
+      (canWrite ? '<button class="btn primary" id="new-forecast-btn">+ Prevision de recolte</button>' : '') + '</div>' +
+    '<div class="card"><div class="card-head"><h2>Previsions</h2></div><div class="card-body table-wrap">' +
+      (fc.length ? '<table><thead><tr><th>Produit</th><th>Periode</th><th>Qte prevue</th><th>Zone</th></tr></thead><tbody>'+fcRows+'</tbody></table>' : '<div class="empty">Aucune prevision enregistree.</div>') +
+    '</div></div>' +
+    '<div class="card"><div class="card-head"><h2>Recolte reelle (journal)</h2></div><div class="card-body table-wrap">' +
+      (logs.length ? '<table><thead><tr><th>Date</th><th>Produit</th><th>Qte recoltee</th><th>Destination</th></tr></thead><tbody>'+logRows+'</tbody></table>' : '<div class="empty">Aucune recolte enregistree pour le moment.</div>') +
+    '</div></div>' +
+    (state.modal === "new-forecast" ? newForecastModal() : "")
+  );
+}
+function newForecastModal(){
+  var crops = state.data.crops && state.data.crops.length ? state.data.crops : [{crop:"Menthe"},{crop:"Persil"},{crop:"Basilic"},{crop:"Coriandre"}];
+  return '<div class="modal-bg" id="modal-bg"><div class="modal">' +
+    '<h2>Prevision de recolte</h2>' +
+    '<form id="new-forecast-form">' +
+      '<div class="field"><label>Produit</label><select name="crop">' + crops.map(function(c){return '<option value="'+esc(c.crop)+'">'+esc(c.crop)+'</option>';}).join("") + '</select></div>' +
+      '<div class="row"><div class="field"><label>Debut periode</label><input type="date" name="period_start" value="'+todayISO()+'" required /></div>' +
+      '<div class="field"><label>Fin periode</label><input type="date" name="period_end" required /></div></div>' +
+      '<div class="row"><div class="field"><label>Quantite prevue (bottes)</label><input type="number" min="0" name="forecast_qty_bottles" required /></div>' +
+      '<div class="field"><label>Zone / tunnel</label><input type="text" name="zone" /></div></div>' +
+      '<div class="row" style="margin-top:14px;"><button type="button" class="btn ghost" id="cancel-forecast">Annuler</button><button type="submit" class="btn primary">Enregistrer</button></div>' +
+    '</form>' +
+  '</div></div>';
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: FACTURES                                                    */
+/* ---------------------------------------------------------------- */
+function payTone(s){ return {payee:"ok", partielle:"warn", impayee:"danger"}[s] || "muted"; }
+function renderFactures(){
+  var invs = state.data.invoices || [];
+  var rows = invs.map(function(inv){
+    return '<tr data-inv="'+inv.id+'">' +
+      '<td class="num">'+esc(inv.invoice_number)+'</td>' +
+      '<td>'+fmtDate(inv.invoice_date)+'</td>' +
+      '<td>'+esc(inv.client_name)+'</td>' +
+      '<td class="num">'+fmtFCFA(inv.total_xof)+'</td>' +
+      '<td>' + pill(inv.payment_status, payTone(inv.payment_status)) + '</td>' +
+      '<td><select data-inv-payment="'+inv.id+'" style="width:auto;"><option value="impayee" '+(inv.payment_status==='impayee'?'selected':'')+'>a encaisser</option><option value="partielle" '+(inv.payment_status==='partielle'?'selected':'')+'>partielle</option><option value="payee" '+(inv.payment_status==='payee'?'selected':'')+'>encaissee</option></select></td>' +
+      '<td><input type="text" placeholder="N FNE" data-inv-fne="'+inv.id+'" value="'+esc(inv.fne_invoice_number||'')+'" style="width:120px;" /></td>' +
+    '</tr>';
+  }).join("");
+  return renderShell(
+    '<div class="view-title"><h1>Factures & creances</h1><div class="sub">Generees automatiquement a la livraison</div></div>' +
+    '<div class="card"><div class="card-body table-wrap">' +
+      (invs.length ? '<table><thead><tr><th>N interne</th><th>Date</th><th>Client</th><th>Total TTC</th><th>Statut</th><th>Encaissement</th><th>N Facture FNE</th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">Aucune facture pour le moment. Elles sont creees automatiquement quand une commande est marquee livree.</div>') +
+    '</div></div>'
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* RENDER: PARAMETRES                                                  */
+/* ---------------------------------------------------------------- */
+function renderParametres(){
+  var crops = state.data.crops || [];
+  var clients = state.data.clients || [];
+  var settings = state.data.settings || {};
+  var cropRows = crops.map(function(c){
+    return '<tr><td>'+esc(c.crop)+'</td><td><input type="number" min="0" data-crop-price="'+esc(c.crop)+'" value="'+(c.price_xof||0)+'" style="width:110px;" /></td>' +
+      '<td>' + (Number(c.price_xof)>0 ? pill("configure","ok") : pill("a definir","warn")) + '</td></tr>';
+  }).join("");
+  var clientRows = clients.map(function(c){
+    return '<tr><td>'+esc(c.client_name)+'</td>' +
+      '<td><input type="text" data-client-field="billing_name" data-client="'+c.id+'" value="'+esc(c.billing_name||'')+'" placeholder="Raison sociale facturation" /></td>' +
+      '<td><input type="text" data-client-field="tax_identifier" data-client="'+c.id+'" value="'+esc(c.tax_identifier||'')+'" placeholder="IDU / NCC" style="width:130px;" /></td>' +
+      '<td>' + pill(c.is_active?"actif":"inactif", c.is_active?"ok":"muted") + '</td></tr>';
+  }).join("");
+  return renderShell(
+    '<div class="view-title"><h1>Parametres</h1><div class="sub">Produits, clients et parametres de facturation</div></div>' +
+    '<div class="banner warn">Les prix de vente ne sont pas encore configures pour certains produits : les revenus calcules seront sous-estimes tant qu\'ils ne le sont pas.</div>' +
+    '<div class="card"><div class="card-head"><h2>Produits & prix de vente</h2></div><div class="card-body table-wrap">' +
+      '<table><thead><tr><th>Produit</th><th>Prix unitaire (FCFA / botte)</th><th></th></tr></thead><tbody>'+cropRows+'</tbody></table>' +
+      '<button class="btn small primary" id="save-prices-btn" style="margin-top:12px;">Enregistrer les prix</button>' +
+    '</div></div>' +
+    '<div class="card"><div class="card-head"><h2>Clients (facturation)</h2></div><div class="card-body table-wrap">' +
+      '<table><thead><tr><th>Magasin</th><th>Raison sociale (facture)</th><th>IDU / NCC</th><th>Statut</th></tr></thead><tbody>'+clientRows+'</tbody></table>' +
+      '<button class="btn small primary" id="save-clients-btn" style="margin-top:12px;">Enregistrer les clients</button>' +
+    '</div></div>' +
+    '<div class="card"><div class="card-head"><h2>WhatsApp (a venir en V2)</h2></div><div class="card-body">' +
+      '<div class="field" style="max-width:280px;"><label>Numero WhatsApp Business</label><input type="text" id="whatsapp-phone" value="'+esc(settings.whatsapp_phone||'')+'" placeholder="+225 07 00 00 00 00" /></div>' +
+      '<button class="btn small" id="save-whatsapp-btn">Enregistrer</button>' +
+      '<p class="section-note">Ce numero sera utilise pour brancher les commandes WhatsApp des magasins (V2, non actif pour l\'instant).</p>' +
+    '</div></div>' +
+    '<div class="card"><div class="card-head"><h2>Export comptable</h2></div><div class="card-body">' +
+      '<div class="row" style="align-items:flex-end;">' +
+        '<div class="field" style="max-width:180px;"><label>Mois</label><input type="month" id="export-month" value="'+state.month+'" /></div>' +
+        '<button class="btn primary" id="export-btn">Generer le recapitulatif Excel</button>' +
+      '</div>' +
+      '<p class="section-note">Genere un fichier .xlsx (ventes, depenses, compte courant associe, creances) pour le cabinet comptable.</p>' +
+    '</div></div>'
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* MAIN RENDER                                                         */
+/* ---------------------------------------------------------------- */
+function render(){
+  var app = document.getElementById("app");
+  if (!state.session){
+    app.innerHTML = renderLogin();
+    bindLogin();
+    return;
+  }
+  if (!state.profile || !state.profile.role){
+    app.innerHTML = renderShell('<div class="banner danger">Votre compte n\'a pas encore de role assigne. Contactez un administrateur.</div>');
+    bindShellCommon();
+    return;
+  }
+  var html = "";
+  if (state.view === "dashboard") html = renderDashboard();
+  else if (state.view === "commandes") html = renderCommandes();
+  else if (state.view === "depenses") html = renderDepenses();
+  else if (state.view === "recoltes") html = renderRecoltes();
+  else if (state.view === "factures") html = renderFactures();
+  else if (state.view === "parametres") html = renderParametres();
+  else html = renderDashboard();
+
+  if (state.toast) html += '<div class="toast ' + (state.toast.err?'err':'') + '">' + esc(state.toast.msg) + '</div>';
+
+  app.innerHTML = html;
+  bindShellCommon();
+  bindView();
+}
+
+function bindLogin(){
+  var f = document.getElementById("login-form");
+  if (f) f.addEventListener("submit", handleLogin);
+  var fl = document.getElementById("forgot-link");
+  if (fl) fl.addEventListener("click", function(e){
+    e.preventDefault();
+    var email = f.email.value.trim();
+    handleForgot(email);
+  });
+}
+
+function bindShellCommon(){
+  document.querySelectorAll("[data-nav]").forEach(function(el){
+    el.addEventListener("click", function(){ goto(el.getAttribute("data-nav")); });
+  });
+  var lo = document.getElementById("logout-btn");
+  if (lo) lo.addEventListener("click", handleLogout);
+  var mp = document.getElementById("month-picker");
+  if (mp) mp.addEventListener("change", function(){ state.month = mp.value; loadView(state.view); });
+}
+
+function closeModal(){ state.modal = null; render(); }
+
+function bindView(){
+  if (state.view === "commandes") bindCommandes();
+  if (state.view === "depenses") bindDepenses();
+  if (state.view === "recoltes") bindRecoltes();
+  if (state.view === "factures") bindFactures();
+  if (state.view === "parametres") bindParametres();
+}
+
+/* ---- commandes bindings ---- */
+function bindCommandes(){
+  var nb = document.getElementById("new-order-btn");
+  if (nb) nb.addEventListener("click", function(){ state.modal = "new-order"; render(); });
+
+  document.querySelectorAll("[data-toggle-order]").forEach(function(el){
+    el.addEventListener("click", function(){
+      var id = el.getAttribute("data-toggle-order");
+      var row = document.getElementById("detail-"+id);
+      if (row) row.classList.toggle("hidden");
+    });
+  });
+
+  document.querySelectorAll("[data-order-status]").forEach(function(el){
+    el.addEventListener("change", async function(){
+      var id = el.getAttribute("data-order-status");
+      try{
+        var { error } = await sb.from("orders").update({status: el.value}).eq("id", id);
+        if (error) throw error;
+        showToast("Statut mis a jour.");
+        await loadOrders(); render();
+      }catch(e){ showToast("Erreur: "+e.message, true); }
+    });
+  });
+
+  document.querySelectorAll("[data-item-declared]").forEach(function(el){
+    el.addEventListener("change", async function(){
+      var id = el.getAttribute("data-item-declared");
+      var val = el.value === "" ? null : Number(el.value);
+      try{
+        var { error } = await sb.from("order_items").update({qty_declared_by_sales: val}).eq("id", id);
+        if (error) throw error;
+        showToast("Quantite declaree enregistree.");
+      }catch(e){ showToast("Erreur: "+e.message, true); }
+    });
+  });
+
+  document.querySelectorAll("[data-mark-delivered]").forEach(function(el){
+    el.addEventListener("click", async function(){
+      var orderId = el.getAttribute("data-mark-delivered");
+      var detailRow = document.getElementById("detail-"+orderId);
+      var inputs = detailRow.querySelectorAll("[data-item-delivered]");
+      if (!confirm("Confirmer la livraison de cette commande ? Une facture sera generee automatiquement.")) return;
+      try{
+        for (var i=0;i<inputs.length;i++){
+          var input = inputs[i];
+          var itemId = input.getAttribute("data-item-delivered");
+          var qty = Number(input.value);
+          var status = qty <= 0 ? "refusee" : (qty < Number(input.defaultValue||qty) ? "livree partielle" : "livree totale");
+          var { error } = await sb.from("order_items").update({
+            qty_delivered: qty, delivery_status: status, delivered_at: new Date().toISOString()
+          }).eq("id", itemId);
+          if (error) throw error;
+        }
+        var { error: oe } = await sb.from("orders").update({status:"livrée"}).eq("id", orderId);
+        if (oe) throw oe;
+        showToast("Commande marquee livree — facture generee.");
+        await loadOrders(); render();
+      }catch(e){ showToast("Erreur: "+e.message, true); }
+    });
+  });
+
+  var cancelBtn = document.getElementById("cancel-order");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+  var bg = document.getElementById("modal-bg");
+  if (bg) bg.addEventListener("click", function(e){ if (e.target === bg) closeModal(); });
+
+  var addLine = document.getElementById("add-item-line");
+  if (addLine) addLine.addEventListener("click", function(){
+    var container = document.getElementById("item-lines");
+    var n = container.children.length;
+    container.insertAdjacentHTML("beforeend", itemLine(n, state.data.crops||[]));
+    bindRemoveLines();
+  });
+  bindRemoveLines();
+
+  var form = document.getElementById("new-order-form");
+  if (form) form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var fd = new FormData(form);
+    var lines = form.querySelectorAll(".item-line");
+    var items = [];
+    lines.forEach(function(line){
+      var crop = line.querySelector('[name="crop"]').value;
+      var qty = Number(line.querySelector('[name="qty"]').value || 0);
+      var declared = line.querySelector('[name="declared"]').value;
+      if (qty > 0) items.push({crop: crop, qty_bottles: qty, qty_declared_by_sales: declared===""?null:Number(declared)});
+    });
+    if (!items.length){ showToast("Ajoutez au moins un produit avec une quantite.", true); return; }
+    try{
+      var { data: order, error } = await sb.from("orders").insert({
+        client_name: fd.get("client_name"),
+        delivery_date: fd.get("delivery_date"),
+        channel: fd.get("channel"),
+        status: fd.get("status"),
+        note: fd.get("note") || null
+      }).select().single();
+      if (error) throw error;
+      var itemsPayload = items.map(function(it){ return Object.assign({order_id: order.id}, it); });
+      var { error: ie } = await sb.from("order_items").insert(itemsPayload);
+      if (ie) throw ie;
+      showToast("Commande creee.");
+      closeModal();
+      await loadOrders(); render();
+    }catch(e){ showToast("Erreur: "+e.message, true); }
+  });
+}
+function bindRemoveLines(){
+  document.querySelectorAll(".remove-line").forEach(function(btn){
+    btn.onclick = function(){
+      var container = document.getElementById("item-lines");
+      if (container.children.length > 1) btn.closest(".item-line").remove();
+    };
+  });
+}
+
+/* ---- depenses bindings ---- */
+function bindDepenses(){
+  var nb = document.getElementById("new-expense-btn");
+  if (nb) nb.addEventListener("click", function(){ state.modal = "new-expense"; render(); });
+  var cancelBtn = document.getElementById("cancel-expense");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+  var bg = document.getElementById("modal-bg");
+  if (bg) bg.addEventListener("click", function(e){ if (e.target === bg) closeModal(); });
+
+  document.querySelectorAll("[data-reimburse]").forEach(function(el){
+    el.addEventListener("change", async function(){
+      var id = el.getAttribute("data-reimburse");
+      try{
+        var { error } = await sb.from("expenses").update({
+          reimbursed: el.checked, reimbursed_date: el.checked ? todayISO() : null
+        }).eq("id", id);
+        if (error) throw error;
+        showToast("Mis a jour.");
+        await loadExpenses(); render();
+      }catch(e){ showToast("Erreur: "+e.message, true); }
+    });
+  });
+
+  var form = document.getElementById("new-expense-form");
+  if (form) form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var fd = new FormData(form);
+    try{
+      var { error } = await sb.from("expenses").insert({
+        expense_date: fd.get("expense_date"),
+        amount: Number(fd.get("amount")),
+        category: fd.get("category"),
+        description: fd.get("description") || null,
+        payment_method: fd.get("payment_method"),
+        paid_by: fd.get("paid_by"),
+        created_by_name: (state.profile.full_name || state.profile.email)
+      });
+      if (error) throw error;
+      showToast("Depense enregistree.");
+      closeModal();
+      await loadExpenses(); render();
+    }catch(e){ showToast("Erreur: "+e.message, true); }
+  });
+}
+
+/* ---- recoltes bindings ---- */
+function bindRecoltes(){
+  var nb = document.getElementById("new-forecast-btn");
+  if (nb) nb.addEventListener("click", function(){ state.modal = "new-forecast"; render(); });
+  var cancelBtn = document.getElementById("cancel-forecast");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+  var bg = document.getElementById("modal-bg");
+  if (bg) bg.addEventListener("click", function(e){ if (e.target === bg) closeModal(); });
+  var form = document.getElementById("new-forecast-form");
+  if (form) form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var fd = new FormData(form);
+    try{
+      var { error } = await sb.from("harvest_forecasts").insert({
+        crop: fd.get("crop"),
+        period_start: fd.get("period_start"),
+        period_end: fd.get("period_end"),
+        forecast_qty_bottles: Number(fd.get("forecast_qty_bottles")),
+        zone: fd.get("zone") || null
+      });
+      if (error) throw error;
+      showToast("Prevision enregistree.");
+      closeModal();
+      await loadRecoltes(); render();
+    }catch(e){ showToast("Erreur: "+e.message, true); }
+  });
+}
+
+/* ---- factures bindings ---- */
+function bindFactures(){
+  document.querySelectorAll("[data-inv-payment]").forEach(function(el){
+    el.addEventListener("change", async function(){
+      var id = el.getAttribute("data-inv-payment");
+      var payload = {payment_status: el.value};
+      if (el.value === "payee") payload.paid_at = new Date().toISOString();
+      try{
+        var { error } = await sb.from("invoices").update(payload).eq("id", id);
+        if (error) throw error;
+        showToast("Statut de paiement mis a jour.");
+        await loadFactures(); render();
+      }catch(e){ showToast("Erreur: "+e.message, true); }
+    });
+  });
+  document.querySelectorAll("[data-inv-fne]").forEach(function(el){
+    el.addEventListener("change", async function(){
+      var id = el.getAttribute("data-inv-fne");
+      try{
+        var { error } = await sb.from("invoices").update({fne_invoice_number: el.value || null}).eq("id", id);
+        if (error) throw error;
+        showToast("Numero FNE enregistre.");
+      }catch(e){ showToast("Erreur: "+e.message, true); }
+    });
+  });
+}
+
+/* ---- parametres bindings ---- */
+function bindParametres(){
+  var spb = document.getElementById("save-prices-btn");
+  if (spb) spb.addEventListener("click", async function(){
+    var inputs = document.querySelectorAll("[data-crop-price]");
+    try{
+      for (var i=0;i<inputs.length;i++){
+        var el = inputs[i];
+        var { error } = await sb.from("crop_configs").update({price_xof: Number(el.value)||0}).eq("crop", el.getAttribute("data-crop-price"));
+        if (error) throw error;
+      }
+      showToast("Prix enregistres.");
+      await loadParametres(); render();
+    }catch(e){ showToast("Erreur: "+e.message, true); }
+  });
+
+  var scb = document.getElementById("save-clients-btn");
+  if (scb) scb.addEventListener("click", async function(){
+    var rows = {};
+    document.querySelectorAll("[data-client]").forEach(function(el){
+      var id = el.getAttribute("data-client");
+      var field = el.getAttribute("data-client-field");
+      rows[id] = rows[id] || {};
+      rows[id][field] = el.value;
+    });
+    try{
+      for (var id in rows){
+        var { error } = await sb.from("clients").update(rows[id]).eq("id", id);
+        if (error) throw error;
+      }
+      showToast("Clients mis a jour.");
+    }catch(e){ showToast("Erreur: "+e.message, true); }
+  });
+
+  var swb = document.getElementById("save-whatsapp-btn");
+  if (swb) swb.addEventListener("click", async function(){
+    var val = document.getElementById("whatsapp-phone").value;
+    try{
+      var { error } = await sb.from("app_settings").update({whatsapp_phone: val || null}).eq("id",1);
+      if (error) throw error;
+      showToast("Numero WhatsApp enregistre.");
+    }catch(e){ showToast("Erreur: "+e.message, true); }
+  });
+
+  var eb = document.getElementById("export-btn");
+  if (eb) eb.addEventListener("click", async function(){
+    var month = document.getElementById("export-month").value;
+    eb.disabled = true; eb.textContent = "Generation…";
+    try{ await generateExcelExport(month); }
+    catch(e){ showToast("Erreur export: "+e.message, true); }
+    eb.disabled = false; eb.textContent = "Generer le recapitulatif Excel";
+  });
+}
+
+/* ---------------------------------------------------------------- */
+/* EXCEL EXPORT                                                        */
+/* ---------------------------------------------------------------- */
+async function generateExcelExport(monthStr){
+  var mb = monthBounds(monthStr);
+  var [salesRes, expRes, ccaRes, invRes] = await Promise.all([
+    sb.from("v_sales").select("*").gte("delivery_date", mb.start).lte("delivery_date", mb.end).not("qty_delivered","is",null),
+    roleAllows("depenses") ? sb.from("expenses").select("*").gte("expense_date", mb.start).lte("expense_date", mb.end) : Promise.resolve({data:[]}),
+    roleAllows("depenses") ? sb.from("v_compte_courant_associe").select("*").single() : Promise.resolve({data:null}),
+    sb.from("invoices").select("*").gte("invoice_date", mb.start).lte("invoice_date", mb.end)
+  ]);
+  var sales = salesRes.data || [];
+  var expenses = expRes.data || [];
+  var cca = ccaRes.data;
+  var invoices = invRes.data || [];
+
+  var wb = XLSX.utils.book_new();
+
+  var salesAOA = [["Date livraison","Client","Canal","Produit","Qte livree","Prix unitaire HT","Montant HT"]];
+  var totalHT = 0;
+  sales.forEach(function(r){
+    salesAOA.push([r.delivery_date, r.client_name, r.channel, r.crop, r.qty_delivered, r.unit_price_xof, r.amount_ht_xof]);
+    totalHT += Number(r.amount_ht_xof||0);
+  });
+  salesAOA.push(["","","","","","TOTAL", totalHT]);
+  var wsSales = XLSX.utils.aoa_to_sheet(salesAOA);
+  XLSX.utils.book_append_sheet(wb, wsSales, "Ventes-Livraisons");
+
+  var expAOA = [["Date","Categorie","Description","Montant","Mode paiement","Paye par","Rembourse","Date remboursement"]];
+  var totalDep = 0, totalGG = 0, totalAvance = 0;
+  expenses.forEach(function(e){
+    expAOA.push([e.expense_date, e.category, e.description||"", Number(e.amount), e.payment_method||"", e.paid_by, e.reimbursed?"Oui":"Non", e.reimbursed_date||""]);
+    totalDep += Number(e.amount);
+    if (e.paid_by === "Green Gourmet") totalGG += Number(e.amount); else totalAvance += Number(e.amount);
+  });
+  expAOA.push(["","","TOTAL", totalDep,"","","",""]);
+  expAOA.push(["","","  dont Green Gourmet", totalGG,"","","",""]);
+  expAOA.push(["","","  dont Avance associe", totalAvance,"","","",""]);
+  var wsExp = XLSX.utils.aoa_to_sheet(expAOA);
+  XLSX.utils.book_append_sheet(wb, wsExp, "Depenses");
+
+  var ccaAOA = [["Compte courant associe - Mohamed Sofiane Gordah"],[],
+    ["Total avances cumulees (depuis toujours)", cca ? cca.total_avances_cumulees : ""],
+    ["Total rembourse cumule (depuis toujours)", cca ? cca.total_rembourse_cumule : ""],
+    ["SOLDE ACTUEL DU A L'ASSOCIE", cca ? cca.solde_du_a_l_associe : ""]];
+  var wsCca = XLSX.utils.aoa_to_sheet(ccaAOA);
+  XLSX.utils.book_append_sheet(wb, wsCca, "Compte courant associe");
+
+  var creances = invoices.filter(function(i){ return i.payment_status !== "payee"; });
+  var creAOA = [["N Facture","Date","Client","Total TTC","Statut","N FNE"]];
+  var totalCreances = 0;
+  creances.forEach(function(i){
+    creAOA.push([i.invoice_number, i.invoice_date, i.client_name, Number(i.total_xof), i.payment_status, i.fne_invoice_number||""]);
+    totalCreances += Number(i.total_xof);
+  });
+  creAOA.push(["","","TOTAL A ENCAISSER","", totalCreances,""]);
+  var wsCre = XLSX.utils.aoa_to_sheet(creAOA);
+  XLSX.utils.book_append_sheet(wb, wsCre, "Creances clients");
+
+  var synthAOA = [
+    ["Synthese - " + monthStr],[],
+    ["Chiffre d'affaires livre (HT)", totalHT],
+    ["Total depenses", totalDep],
+    ["  dont Green Gourmet", totalGG],
+    ["  dont Avance associe", totalAvance],
+    ["Resultat brut (CA HT - depenses)", totalHT - totalDep],
+    ["Solde compte courant associe", cca ? cca.solde_du_a_l_associe : ""],
+    ["Total creances clients a encaisser", totalCreances]
+  ];
+  var wsSynth = XLSX.utils.aoa_to_sheet(synthAOA);
+  XLSX.utils.book_append_sheet(wb, wsSynth, "Synthese", true);
+
+  var wbArray = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+  var filename = "GreenGourmet_Recap_" + monthStr + ".xlsx";
+
+  var saved = false;
+  try{
+    var downloads = await Promise.race([
+      (window.claude && window.claude.use) ? window.claude.use("downloads") : Promise.resolve(null),
+      new Promise(function(res){ setTimeout(function(){ res(null); }, 4000); })
+    ]);
+    if (downloads){
+      await downloads.save({filename: filename, data: wbArray});
+      saved = true;
+    }
+  }catch(e){ /* fall through to blob link */ }
+
+  if (!saved){
+    var blob = new Blob([wbArray], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+  showToast("Export genere : " + filename);
+}
+
+init();
+})();
+</script>
